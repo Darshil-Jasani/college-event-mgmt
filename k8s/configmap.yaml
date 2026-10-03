@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: college-event-config
+  namespace: college-events
+data:
+  DB_URL: jdbc:postgresql://postgres:5432/events
+  DB_USERNAME: events
+  LOG_LEVEL: INFO

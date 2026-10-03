@@ -1,0 +1,88 @@
+# Local stack: app + PostgreSQL + Prometheus + Grafana (+ Loki/Promtail optional)
+# Light start (recommended for slow PCs):  docker compose up -d db app
+# Add monitoring:                          docker compose up -d prometheus grafana
+# Add log tools (heavy, optional):         docker compose --profile logging up -d
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: events
+      POSTGRES_USER: events
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U events -d events"]
+      interval: 30s
+      timeout: 30s
+      retries: 20
+      start_period: 300s
+
+  app:
+    build: .
+    image: college-event-mgmt:local
+    init: true
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/events
+      DB_USERNAME: events
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      ORGANIZER_PASSWORD: ${ORGANIZER_PASSWORD:-organizer123}
+      STUDENT_PASSWORD: ${STUDENT_PASSWORD:-student123}
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "5"
+      JAVA_OPTS: "-XX:MaxRAMPercentage=60 -Xss512k"
+    ports:
+      - "8082:8080"
+    labels:
+      logging: "promtail"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080 && printf \"GET /actuator/health HTTP/1.0\\r\\n\\r\\n\" >&3 && grep -q UP <&3'"]
+      interval: 60s
+      timeout: 30s
+      retries: 10
+      start_period: 300s
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      - app
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
+  # ---- Optional, heavy: only start with  --profile logging ----
+  loki:
+    image: grafana/loki:3.1.1
+    profiles: ["logging"]
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
+
+  promtail:
+    image: grafana/promtail:3.1.1
+    profiles: ["logging"]
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./monitoring/loki/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - loki
+
+volumes:
+  pgdata:

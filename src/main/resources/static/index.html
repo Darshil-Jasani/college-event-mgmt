@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>College Event Management</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>🎓 College Event Management</h1>
+    <div id="auth">
+      <input id="user" placeholder="username" value="student">
+      <input id="pass" type="password" placeholder="password" value="student123">
+      <button id="loginBtn">Sign in</button>
+      <span id="who"></span>
+    </div>
+  </header>
+  <main>
+    <section id="createBox" hidden>
+      <h2>Create event</h2>
+      <div class="row">
+        <input id="title" placeholder="Title">
+        <input id="venue" placeholder="Venue">
+        <input id="date" type="datetime-local">
+        <input id="capacity" type="number" min="1" value="50">
+      </div>
+      <textarea id="desc" placeholder="Description"></textarea>
+      <button id="createBtn">Create</button>
+    </section>
+    <section>
+      <h2>Events</h2>
+      <div id="msg"></div>
+      <div id="events" class="grid"></div>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
