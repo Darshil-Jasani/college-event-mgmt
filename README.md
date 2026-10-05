@@ -1,4 +1,4 @@
-# 🎓 College Event Management System – CI/CD & DevOps Project
+# 🎓 College Event Management System – CI/CD & DevOps 
 
 MSc IT DevOps project #15. A Spring Boot application for creating events, registering
 participants and recording attendance, wrapped in a complete DevOps pipeline:
